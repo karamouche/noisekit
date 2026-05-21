@@ -59,10 +59,7 @@ def _resolve_params(t: dict, noise_dir: Path | None) -> dict:
 
 def preset_requires_noise_dir(name: str, preset_file: Path | None = None) -> bool:
     """Peek at a preset YAML and report whether it references ${NOISE_DIR}."""
-    if preset_file is not None:
-        path = preset_file
-    else:
-        path = Path(__file__).parent / "presets" / f"{name}.yaml"
+    path = preset_file if preset_file is not None else Path(__file__).parent / "presets" / f"{name}.yaml"
     if not path.exists():
         return False
     cfg = yaml.safe_load(path.read_text())
@@ -91,16 +88,10 @@ def load_preset(
     preset_file: Path | None = None,
     noise_dir: Path | None = None,
 ) -> PresetTransforms:
-    if preset_file is not None:
-        path = preset_file
-    else:
-        path = Path(__file__).parent / "presets" / f"{name}.yaml"
+    path = preset_file if preset_file is not None else Path(__file__).parent / "presets" / f"{name}.yaml"
 
     if not path.exists():
-        raise FileNotFoundError(
-            f"Preset '{name}' not found. "
-            f"Run 'noisekit list-presets' to see available presets."
-        )
+        raise FileNotFoundError(f"Preset '{name}' not found. Run 'noisekit list-presets' to see available presets.")
 
     cfg = yaml.safe_load(path.read_text())
     t_configs = cfg["transforms"]
@@ -111,11 +102,7 @@ def load_preset(
     # In that case we split: scoring uses all-but-last (at 8 kHz), output uses full.
     # This avoids the PESQ collapse caused by double-resampling (8k→16k→8k).
     last = t_configs[-1]
-    if (
-        last["type"] == "Resample"
-        and last.get("parameters", {}).get("min_sample_rate") == 16000
-        and len(t_configs) > 1
-    ):
+    if last["type"] == "Resample" and last.get("parameters", {}).get("min_sample_rate") == 16000 and len(t_configs) > 1:
         scoring_configs = t_configs[:-1]
         scoring = _SRTrackingCompose([_make_transform(t, noise_dir) for t in scoring_configs])
         # Infer scoring SR from the first Resample in the scoring chain
@@ -131,7 +118,4 @@ def load_preset(
 
 def list_builtin_presets() -> list[dict]:
     presets_dir = Path(__file__).parent / "presets"
-    return [
-        yaml.safe_load(f.read_text())
-        for f in sorted(presets_dir.glob("*.yaml"))
-    ]
+    return [yaml.safe_load(f.read_text()) for f in sorted(presets_dir.glob("*.yaml"))]

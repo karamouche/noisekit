@@ -8,8 +8,8 @@ def compute_snr_db(ref: np.ndarray, deg: np.ndarray) -> float:
     ref = ref[:min_len].astype(np.float64)
     deg = deg[:min_len].astype(np.float64)
     noise = deg - ref
-    signal_power = float(np.mean(ref ** 2))
-    noise_power = float(np.mean(noise ** 2))
+    signal_power = float(np.mean(ref**2))
+    noise_power = float(np.mean(noise**2))
     if noise_power < 1e-10:
         return 99.0
     return float(10.0 * np.log10(signal_power / noise_power))
@@ -38,6 +38,7 @@ def compute_pesq(ref: np.ndarray, deg: np.ndarray, sr: int) -> float | None:
         # Wideband at 16 kHz (or resample to 16 kHz first)
         if sr != 16000:
             import librosa
+
             ref_aligned = librosa.resample(ref_aligned, orig_sr=sr, target_sr=16000)
             deg_aligned = librosa.resample(deg_aligned, orig_sr=sr, target_sr=16000)
             min_len = min(len(ref_aligned), len(deg_aligned))
@@ -58,10 +59,8 @@ def compute_nisqa(audio: np.ndarray, sr: int) -> dict[str, float | None]:
     except ImportError:
         return dict.fromkeys(_NISQA_KEYS)
     try:
-        scores = non_intrusive_speech_quality_assessment(
-            torch.from_numpy(audio.astype(np.float32)), fs=sr
-        )
-        return {k: round(float(v), 3) for k, v in zip(_NISQA_KEYS, scores)}
+        scores = non_intrusive_speech_quality_assessment(torch.from_numpy(audio.astype(np.float32)), fs=sr)
+        return {k: round(float(v), 3) for k, v in zip(_NISQA_KEYS, scores, strict=False)}
     except Exception:
         return dict.fromkeys(_NISQA_KEYS)
 

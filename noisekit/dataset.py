@@ -17,10 +17,7 @@ def load_samples(
     from datasets import Audio, load_dataset
 
     kwargs: dict = dict(split=split, streaming=True)
-    if config is not None:
-        ds = load_dataset(dataset_name, config, **kwargs)
-    else:
-        ds = load_dataset(dataset_name, **kwargs)
+    ds = load_dataset(dataset_name, config, **kwargs) if config is not None else load_dataset(dataset_name, **kwargs)
 
     # Disable auto-decoding so we can decode with soundfile ourselves,
     # avoiding the torchcodec requirement introduced in datasets 4.x.

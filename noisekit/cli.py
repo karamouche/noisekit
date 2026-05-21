@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated, List, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -20,14 +20,16 @@ console = Console()
 def generate(
     dataset: Annotated[str, typer.Option(help="HuggingFace dataset name (e.g. google/fleurs)")],
     samples: Annotated[int, typer.Option(help="Number of source samples to process")] = 100,
-    presets: Annotated[Optional[List[str]], typer.Option(help="Preset name(s) to apply. Repeatable.")] = None,
-    output: Annotated[Optional[Path], typer.Option(help="Output directory. Omit to auto-create ./output/<timestamp>/")] = None,
+    presets: Annotated[list[str] | None, typer.Option(help="Preset name(s) to apply. Repeatable.")] = None,
+    output: Annotated[
+        Path | None, typer.Option(help="Output directory. Omit to auto-create ./output/<timestamp>/")
+    ] = None,
     seed: Annotated[int, typer.Option(help="Random seed for dataset shuffling")] = 42,
     split: Annotated[str, typer.Option(help="Dataset split (e.g. train, validation, test)")] = "train",
-    config: Annotated[Optional[str], typer.Option(help="HuggingFace dataset config name")] = None,
-    preset_file: Annotated[Optional[Path], typer.Option(help="Path to a custom preset YAML file")] = None,
+    config: Annotated[str | None, typer.Option(help="HuggingFace dataset config name")] = None,
+    preset_file: Annotated[Path | None, typer.Option(help="Path to a custom preset YAML file")] = None,
     noise_dir: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(
             "--noise-dir",
             help=(
@@ -37,7 +39,9 @@ def generate(
             ),
         ),
     ] = None,
-    nisqa: Annotated[bool, typer.Option("--nisqa/--no-nisqa", help="Compute NISQA scores (downloads ~50 MB model on first use)")] = True,
+    nisqa: Annotated[
+        bool, typer.Option("--nisqa/--no-nisqa", help="Compute NISQA scores (downloads ~50 MB model on first use)")
+    ] = True,
 ) -> None:
     """Generate a degraded speech dataset by applying audio presets to a clean source dataset."""
     from .pipeline import run_generate
@@ -62,11 +66,13 @@ def generate(
 def score(
     input_dir: Annotated[Path, typer.Argument(help="Directory containing WAV files to score")],
     reference_dir: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(help="Directory with matching reference WAVs (enables PESQ + SNR scoring)"),
     ] = None,
     output: Annotated[Path, typer.Option(help="Output JSON path for scores")] = Path("./scores.json"),
-    nisqa: Annotated[bool, typer.Option("--nisqa/--no-nisqa", help="Compute NISQA scores (downloads ~50 MB model on first use)")] = True,
+    nisqa: Annotated[
+        bool, typer.Option("--nisqa/--no-nisqa", help="Compute NISQA scores (downloads ~50 MB model on first use)")
+    ] = True,
 ) -> None:
     """Compute quality scores (PESQ, SNR, NISQA) for an existing audio folder."""
     from .pipeline import run_score
@@ -94,9 +100,7 @@ def list_presets(
         table.add_column("Transforms")
 
     for p in presets:
-        transforms_str = " → ".join(
-            f"{t['type']}(p={t.get('p', 1.0)})" for t in p.get("transforms", [])
-        )
+        transforms_str = " → ".join(f"{t['type']}(p={t.get('p', 1.0)})" for t in p.get("transforms", []))
         if verbose:
             table.add_row(p["name"], p["description"], transforms_str)
         else:

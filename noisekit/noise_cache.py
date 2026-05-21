@@ -16,8 +16,8 @@ from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn
 
 DEFAULT_NOISE_HF_DATASET = "Aynursusuz/musan-audio-dataset"
 DEFAULT_NOISE_NUM_SAMPLES = 20  # ~120 MB at ~6 MB/file
-_NOISE_LABEL = 2        # ClassLabel order: speech (0), music (1), noise (2)
-_N_SHARDS = 45          # total parquet shards in Aynursusuz/musan-audio-dataset
+_NOISE_LABEL = 2  # ClassLabel order: speech (0), music (1), noise (2)
+_N_SHARDS = 45  # total parquet shards in Aynursusuz/musan-audio-dataset
 _FIRST_AMBIENT_SHARD = _N_SHARDS // 2  # speech occupies shards 0-21; music+noise start at 22
 
 console = Console()
@@ -50,8 +50,7 @@ def ensure_default_noise_dir(num_samples: int = DEFAULT_NOISE_NUM_SAMPLES) -> Pa
     # Within shards 22-44 the dataset is sorted music-first then noise; shuffle the
     # shard list so we hit noise-heavy shards early and don't exhaust the quota on music.
     data_files = [
-        f"hf://datasets/{DEFAULT_NOISE_HF_DATASET}/data/"
-        f"train-{i:05d}-of-{_N_SHARDS:05d}.parquet"
+        f"hf://datasets/{DEFAULT_NOISE_HF_DATASET}/data/train-{i:05d}-of-{_N_SHARDS:05d}.parquet"
         for i in range(_FIRST_AMBIENT_SHARD, _N_SHARDS)
     ]
     random.shuffle(data_files)

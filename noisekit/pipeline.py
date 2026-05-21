@@ -44,9 +44,7 @@ def run_generate(
         presets = [p["name"] for p in list_builtin_presets()]
         console.print(f"[dim]No presets specified — using all built-in: {', '.join(presets)}[/dim]")
 
-    if noise_dir is None and any(
-        preset_requires_noise_dir(p, preset_file) for p in presets
-    ):
+    if noise_dir is None and any(preset_requires_noise_dir(p, preset_file) for p in presets):
         noise_dir = ensure_default_noise_dir()
 
     console.print(f"Loading [bold]{samples}[/bold] samples from [cyan]{dataset}[/cyan] (split={split}) …")
@@ -90,9 +88,7 @@ def run_generate(
             # of noise level). The scoring transform stops before the final upsample.
             if preset.scoring is not None and preset.scoring_sr is not None:
                 deg_scoring = preset.scoring(ref_16k.copy(), sample_rate=16000).astype(np.float32)
-                ref_scoring = librosa.resample(
-                    ref_16k, orig_sr=16000, target_sr=preset.scoring_sr
-                )
+                ref_scoring = librosa.resample(ref_16k, orig_sr=16000, target_sr=preset.scoring_sr)
                 min_s = min(len(ref_scoring), len(deg_scoring))
                 pesq_score = compute_pesq(ref_scoring[:min_s], deg_scoring[:min_s], preset.scoring_sr)
                 snr = compute_snr_db(ref_scoring[:min_s], deg_scoring[:min_s])
