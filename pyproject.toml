@@ -22,6 +22,7 @@ dependencies = [
     "lameenc>=1.4",
     "torchcodec>=0.13.0",
     "torch>=2.12.0",
+    "torchmetrics>=1.7.0",
 ]
 
 [project.scripts]

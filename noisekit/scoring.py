@@ -48,6 +48,24 @@ def compute_pesq(ref: np.ndarray, deg: np.ndarray, sr: int) -> float | None:
         return None
 
 
+_NISQA_KEYS = ["nisqa_mos", "nisqa_noisiness", "nisqa_discontinuity", "nisqa_coloration", "nisqa_loudness"]
+
+
+def compute_nisqa(audio: np.ndarray, sr: int) -> dict[str, float | None]:
+    try:
+        import torch
+        from torchmetrics.functional.audio.nisqa import non_intrusive_speech_quality_assessment
+    except ImportError:
+        return dict.fromkeys(_NISQA_KEYS)
+    try:
+        scores = non_intrusive_speech_quality_assessment(
+            torch.from_numpy(audio.astype(np.float32)), fs=sr
+        )
+        return {k: round(float(v), 3) for k, v in zip(_NISQA_KEYS, scores)}
+    except Exception:
+        return dict.fromkeys(_NISQA_KEYS)
+
+
 def audio_stats(audio: np.ndarray, sr: int) -> dict:
     duration = len(audio) / sr
     rms = float(np.sqrt(np.mean(audio.astype(np.float64) ** 2)))

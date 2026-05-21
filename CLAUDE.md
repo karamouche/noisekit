@@ -10,7 +10,7 @@
 
 Use **UV** for everything: `uv add`, `uv run`, `uv sync`. Never use pip directly.
 
-Key runtime dependencies: `audiomentations>=0.38`, `lameenc>=1.4` (pure-Python MP3 encoder used by `Mp3Compression` in `telecommunication` and `bad_audio_encoding`; no system ffmpeg needed).
+Key runtime dependencies: `audiomentations>=0.38`, `lameenc>=1.4` (pure-Python MP3 encoder used by `Mp3Compression` in `telecommunication` and `bad_audio_encoding`; no system ffmpeg needed), `torchmetrics>=1.7.0` (NISQA scoring — downloads ~50 MB model weights to `~/.torchmetrics/NISQA/` on first use).
 
 ## Architecture
 
@@ -20,7 +20,7 @@ noisekit/
 ├── pipeline.py     # generate + score logic
 ├── dataset.py      # HuggingFace dataset loading (soundfile decoder, no torchcodec)
 ├── transforms.py   # Preset loading; returns PresetTransforms(full, scoring, scoring_sr)
-├── scoring.py      # PESQ + SNR; PESQ NB at 8 kHz for telephony presets
+├── scoring.py      # PESQ + SNR + NISQA; PESQ NB at 8 kHz for telephony presets
 ├── noise_cache.py  # Auto-downloads MUSAN music+noise for noisy_environment
 └── presets/        # YAML preset files bundled with the package
 
@@ -31,7 +31,9 @@ noisekit/
 ```bash
 noisekit generate --dataset <hf-name> --samples N --presets P1 P2 --output ./out --seed 42
 noisekit generate ... --presets noisy_environment --noise-dir /path/to/noise_wavs
+noisekit generate ... --no-nisqa          # skip NISQA (no model download, faster)
 noisekit score ./audio_dir [--reference-dir ./ref] [--output scores.json]
+noisekit score ./audio_dir --no-nisqa     # skip NISQA for standalone scoring
 noisekit list-presets [--verbose]
 ```
 
@@ -101,13 +103,18 @@ Uses `datasets` with `Audio(decode=False)` + manual `soundfile` decoding — avo
   "preset": "telecommunication",
   "transcript": "...",
   "snr_db": 1.8,
-  "pesq_mos": 2.86
+  "pesq_mos": 2.86,
+  "nisqa_mos": 2.14,
+  "nisqa_noisiness": 1.93,
+  "nisqa_discontinuity": 2.41,
+  "nisqa_coloration": 1.87,
+  "nisqa_loudness": 2.3
 }
 ```
 
 File naming: `{original_stem}_{preset_name}.wav` where `original_stem` is derived from `sample["audio"]["path"]` (sanitized to `[a-z0-9_]`). Falls back to `sample_{i:04d}` if no path is available. Collisions resolved with `_1`, `_2`, … suffixes.
 
-NISQA fields (`nisqa_mos`, `nisqa_noisiness`, `nisqa_discontinuity`) are deferred to v2.
+NISQA is non-intrusive (no reference needed). It scores the final 16 kHz output using `torchmetrics.functional.audio.nisqa.non_intrusive_speech_quality_assessment`. Model weights (~50 MB) are cached in `~/.torchmetrics/NISQA/` and loaded once per session via `@lru_cache`. Pass `--no-nisqa` to skip. All five dimensions are `null` when skipped.
 
 ## Verification
 
@@ -137,3 +144,5 @@ uv run noisekit generate \
 ```
 
 Expected PESQ spread: clean ~4.6, telecommunication ~2.5-3.5 (NB), bad_audio_encoding ~1.5-2.5 (WB), noisy_environment ~1.0-2.5 (WB).
+
+Expected NISQA spread: clean ~4.0-4.5, degraded presets ~1.5-3.0. NISQA model weights (~50 MB) are downloaded on first run.

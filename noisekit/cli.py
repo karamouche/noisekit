@@ -37,6 +37,7 @@ def generate(
             ),
         ),
     ] = None,
+    nisqa: Annotated[bool, typer.Option("--nisqa/--no-nisqa", help="Compute NISQA scores (downloads ~50 MB model on first use)")] = True,
 ) -> None:
     """Generate a degraded speech dataset by applying audio presets to a clean source dataset."""
     from .pipeline import run_generate
@@ -53,6 +54,7 @@ def generate(
         config=config,
         preset_file=preset_file,
         noise_dir=noise_dir,
+        nisqa=nisqa,
     )
 
 
@@ -64,15 +66,16 @@ def score(
         typer.Option(help="Directory with matching reference WAVs (enables PESQ + SNR scoring)"),
     ] = None,
     output: Annotated[Path, typer.Option(help="Output JSON path for scores")] = Path("./scores.json"),
+    nisqa: Annotated[bool, typer.Option("--nisqa/--no-nisqa", help="Compute NISQA scores (downloads ~50 MB model on first use)")] = True,
 ) -> None:
-    """Compute quality scores (PESQ, SNR) for an existing audio folder."""
+    """Compute quality scores (PESQ, SNR, NISQA) for an existing audio folder."""
     from .pipeline import run_score
 
     if not input_dir.exists():
         console.print(f"[red]Input directory not found: {input_dir}[/red]")
         raise typer.Exit(1)
 
-    run_score(input_dir=input_dir, reference_dir=reference_dir, output=output)
+    run_score(input_dir=input_dir, reference_dir=reference_dir, output=output, nisqa=nisqa)
 
 
 @app.command("list-presets")

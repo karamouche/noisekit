@@ -12,7 +12,7 @@ from rich.progress import track
 
 from .dataset import extract_audio_and_text, load_samples
 from .noise_cache import ensure_default_noise_dir
-from .scoring import audio_stats, compute_pesq, compute_snr_db
+from .scoring import _NISQA_KEYS, audio_stats, compute_nisqa, compute_pesq, compute_snr_db
 from .transforms import list_builtin_presets, load_preset, preset_requires_noise_dir
 
 console = Console()
@@ -34,6 +34,7 @@ def run_generate(
     config: str | None,
     preset_file: Path | None,
     noise_dir: Path | None = None,
+    nisqa: bool = True,
 ) -> None:
     output_dir = Path(output)
     audio_dir = output_dir / "audio"
@@ -99,6 +100,7 @@ def run_generate(
                 pesq_score = compute_pesq(ref_16k[:min_len], deg[:min_len], 16000)
                 snr = compute_snr_db(ref_16k[:min_len], deg[:min_len])
 
+            nisqa_scores = compute_nisqa(deg, 16000) if nisqa else dict.fromkeys(_NISQA_KEYS)
             entry: dict = {
                 "audio": filename,
                 "source": source_filename,
@@ -107,6 +109,7 @@ def run_generate(
                 "transcript": transcript,
                 "snr_db": round(snr, 3),
                 "pesq_mos": pesq_score,
+                **nisqa_scores,
             }
             manifest.append(entry)
 
@@ -123,6 +126,7 @@ def run_score(
     input_dir: Path,
     reference_dir: Path | None,
     output: Path,
+    nisqa: bool = True,
 ) -> None:
     wav_files = sorted(input_dir.glob("*.wav"))
     if not wav_files:
@@ -136,6 +140,9 @@ def run_score(
             audio = audio.mean(axis=1)
 
         entry: dict = {"file": wav_path.name, **audio_stats(audio, sr)}
+
+        if nisqa:
+            entry.update(compute_nisqa(audio, sr))
 
         if reference_dir is not None:
             ref_path = reference_dir / wav_path.name
