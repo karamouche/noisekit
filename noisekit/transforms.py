@@ -57,6 +57,22 @@ def _resolve_params(t: dict, noise_dir: Path | None) -> dict:
     return params
 
 
+def preset_requires_noise_dir(name: str, preset_file: Path | None = None) -> bool:
+    """Peek at a preset YAML and report whether it references ${NOISE_DIR}."""
+    if preset_file is not None:
+        path = preset_file
+    else:
+        path = Path(__file__).parent / "presets" / f"{name}.yaml"
+    if not path.exists():
+        return False
+    cfg = yaml.safe_load(path.read_text())
+    for t in cfg.get("transforms", []):
+        for v in t.get("parameters", {}).values():
+            if v == _NOISE_DIR_PLACEHOLDER:
+                return True
+    return False
+
+
 def _make_transform(t: dict, noise_dir: Path | None = None) -> audiomentations.BaseWaveformTransform:
     cls_name = t["type"]
     if not hasattr(audiomentations, cls_name):

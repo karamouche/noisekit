@@ -21,7 +21,9 @@ noisekit/
 ├── dataset.py      # HuggingFace dataset loading (soundfile decoder, no torchcodec)
 ├── transforms.py   # Preset loading; returns PresetTransforms(full, scoring, scoring_sr)
 ├── scoring.py      # PESQ + SNR; PESQ NB at 8 kHz for telephony presets
+├── noise_cache.py  # Auto-downloads MUSAN music+noise for noisy_environment
 └── presets/        # YAML preset files bundled with the package
+
 ```
 
 ## CLI
@@ -35,7 +37,13 @@ noisekit list-presets [--verbose]
 
 Custom presets: `--preset-file ./my_preset.yaml`
 
-The `noisy_environment` preset requires `--noise-dir` pointing at a directory of background-noise WAVs (e.g. MUSAN, DEMAND, FSD50K). Inside a preset YAML, use the literal string `${NOISE_DIR}` as a parameter value and `transforms.load_preset` substitutes the CLI value at load time.
+The `noisy_environment` preset uses a directory of background-noise WAVs. If `--noise-dir` is omitted, noisekit auto-downloads a small MUSAN **noise-only** subset (~20 files, ~120 MB) from `Aynursusuz/musan-audio-dataset` on HuggingFace to `~/.cache/noisekit/noise/musan_ambient/` on first use. Both `speech` and `music` classes are excluded: speech pollutes ASR/PESQ scoring; music sounds artificial as a background and is indistinguishable from white noise at low levels. Only label 2 (`noise` — wind, rain, traffic, machinery) is downloaded.
+
+Pass `--noise-dir /path/to/wavs` to use your own corpus (e.g. MUSAN, DEMAND, FSD50K) instead. Inside a preset YAML, use the literal string `${NOISE_DIR}` as a parameter value and `transforms.load_preset` substitutes the resolved path at load time. Auto-download is wired in `pipeline.run_generate` via `noise_cache.ensure_default_noise_dir()`, gated by `transforms.preset_requires_noise_dir()`.
+
+### MUSAN download — shard strategy
+
+`Aynursusuz/musan-audio-dataset` is **sorted by label**: speech fills parquet shards 0–21, music+noise occupy shards 22–44 (music-first within that range, then noise). `noise_cache.py` bypasses speech entirely by loading only shards 22–44 via `hf://` URLs, then filters to `label == 2` (noise only). The shard list is shuffled before streaming so noise-heavy shards are hit early; a `buffer_size=200` shuffle adds within-shard diversity. Constants `_N_SHARDS = 45` and `_FIRST_AMBIENT_SHARD = 22` must be updated if the dataset is re-sharded. If the download yields zero noise samples, bisect by testing individual shards to find where the noise class begins.
 
 ## Preset YAML Format
 
@@ -56,7 +64,7 @@ Built-in presets:
 | `clean_reference`    | Minimal gain normalization (PESQ ceiling)    | full                | WB 16 kHz | 4.0-4.5    |
 | `telecommunication`  | G.711 call + low-bitrate MP3 codec artifacts | 300-3400 Hz @ 8 kHz | NB 8 kHz  | 2.0-3.5    |
 | `bad_audio_encoding` | Aggressive low-bitrate MP3 (16-32 kbps)      | 80-7500 Hz @ 16 kHz | WB 16 kHz | 1.5-2.5    |
-| `noisy_environment`  | Real ambient noise via `AddBackgroundNoise`  | up to 8-12 kHz      | WB 16 kHz | 1.0-2.5    |
+| `noisy_environment`  | Real ambient noise via `AddBackgroundNoise`  | up to 8-12 kHz      | WB 16 kHz | 2.0-3.5    |
 
 `telecommunication` uses the 8 kHz PESQ NB scoring split (see below). All other presets score in PESQ WB at 16 kHz.
 
@@ -110,7 +118,13 @@ uv run noisekit generate \
   --output ./test_out --seed 42
 cat test_out/manifest.jsonl
 
-# noisy_environment with a real noise corpus
+# noisy_environment — auto-downloads MUSAN noise-only clips on first run
+uv run noisekit generate \
+  --dataset google/fleurs --config en_us --split test \
+  --samples 3 --presets noisy_environment \
+  --output ./test_noise --seed 42
+
+# noisy_environment with your own noise corpus (skips auto-download)
 uv run noisekit generate \
   --dataset google/fleurs --config en_us --split test \
   --samples 3 --presets noisy_environment \

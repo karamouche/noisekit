@@ -10,8 +10,9 @@ from rich.console import Console
 from rich.progress import track
 
 from .dataset import extract_audio_and_text, load_samples
+from .noise_cache import ensure_default_noise_dir
 from .scoring import audio_stats, compute_pesq, compute_snr_db
-from .transforms import list_builtin_presets, load_preset
+from .transforms import list_builtin_presets, load_preset, preset_requires_noise_dir
 
 console = Console()
 
@@ -40,6 +41,11 @@ def run_generate(
     if not presets:
         presets = [p["name"] for p in list_builtin_presets()]
         console.print(f"[dim]No presets specified — using all built-in: {', '.join(presets)}[/dim]")
+
+    if noise_dir is None and any(
+        preset_requires_noise_dir(p, preset_file) for p in presets
+    ):
+        noise_dir = ensure_default_noise_dir()
 
     console.print(f"Loading [bold]{samples}[/bold] samples from [cyan]{dataset}[/cyan] (split={split}) …")
     raw_samples = load_samples(dataset, samples, seed, split, config)

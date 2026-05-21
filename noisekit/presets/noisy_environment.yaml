@@ -4,17 +4,11 @@ transforms:
   - type: AddBackgroundNoise
     parameters:
       sounds_path: ${NOISE_DIR}
-      min_snr_db: 3.0
-      max_snr_db: 20.0
-      noise_rms: relative_to_whole_input
+      min_snr_db: 5.0
+      max_snr_db: 15.0
     p: 1.0
   - type: LowPassFilter
     parameters:
       min_cutoff_freq: 8000.0
       max_cutoff_freq: 12000.0
     p: 1.0
-  - type: Gain
-    parameters:
-      min_gain_db: -3.0
-      max_gain_db: 3.0
-    p: 0.7
