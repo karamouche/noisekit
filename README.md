@@ -1,10 +1,32 @@
-# noisekit
+<div align="center">
+  <img src="assets/banner.svg" alt="noisekit" width="800"/>
+
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+[![built with audiomentations](https://img.shields.io/badge/built%20with-audiomentations-orange)](https://github.com/iver56/audiomentations)
+
+</div>
+
+<br/>
 
 Generate noise-stratified speech datasets for ASR benchmark studies.
 
-Takes a clean speech-to-text dataset from HuggingFace, applies real-world degradation presets via [audiomentations](https://github.com/iver56/audiomentations), and scores each output with PESQ + SNR — producing a JSONL manifest ready for noise-robustness benchmarking.
+Takes a clean speech-to-text dataset from HuggingFace, applies real-world degradation presets via [audiomentations](https://github.com/iver56/audiomentations), and scores each output with PESQ + SNR + NISQA — producing a JSONL manifest ready for noise-robustness benchmarking.
 
 Three scenarios are covered out of the box: **telecommunication** (G.711 + low-bitrate MP3 codec artifacts), **bad audio encoding** (aggressive low-bitrate compression), and **noisy environment** (real ambient noise from a user-supplied corpus).
+
+## How it works
+
+```mermaid
+flowchart LR
+    A[("HuggingFace\nDataset")] --> B["noisekit generate"]
+    B --> C["telecommunication\nG.711 + MP3"]
+    B --> D["bad_audio_encoding\n16-32 kbps MP3"]
+    B --> E["noisy_environment\nReal ambient noise"]
+    B --> F["clean_reference\nControl"]
+    C & D & E & F --> G[("WAVs +\nmanifest.jsonl\nPESQ · SNR · NISQA")]
+```
 
 ## Install
 
@@ -17,7 +39,7 @@ uvx noisekit --help
 Or install for development:
 
 ```bash
-git clone ...
+git clone https://github.com/Karamouche/noisekit.git
 cd noisekit
 uv sync
 uv run noisekit --help
@@ -67,7 +89,12 @@ Each manifest entry:
   "transcript": "the cat sat on the mat",
   "preset": "telecommunication",
   "snr_db": 5.2,
-  "pesq_mos": 2.78
+  "pesq_mos": 2.78,
+  "nisqa_mos": 2.14,
+  "nisqa_noisiness": 1.93,
+  "nisqa_discontinuity": 2.41,
+  "nisqa_coloration": 1.87,
+  "nisqa_loudness": 2.3
 }
 ```
 
@@ -79,6 +106,9 @@ uvx noisekit score ./audio_folder --output scores.json
 
 # With PESQ + SNR (requires matching reference files)
 uvx noisekit score ./audio_folder --reference-dir ./clean_audio --output scores.json
+
+# Skip NISQA (faster, no model download)
+uvx noisekit score ./audio_folder --no-nisqa --output scores.json
 ```
 
 ### List available presets
@@ -101,7 +131,7 @@ Four built-in presets — three real-world scenarios plus a clean control. None 
 
 `telecommunication` is scored with PESQ narrowband at 8 kHz (before the final upsample); all other presets are scored wideband at 16 kHz.
 
-`noisy_environment` requires `--noise-dir` to point at a directory of background-noise WAVs (e.g. MUSAN, DEMAND, FSD50K). The preset uses [`AddBackgroundNoise`](https://iver56.github.io/audiomentations/waveform_transforms/add_background_noise/) under the hood.
+`noisy_environment` requires `--noise-dir` pointing at a directory of background-noise WAVs (e.g. MUSAN, DEMAND, FSD50K). If omitted, noisekit auto-downloads a small MUSAN noise-only subset (~120 MB) from HuggingFace on first use.
 
 ### Custom presets
 
@@ -139,27 +169,10 @@ transforms:
     p: 1.0
 ```
 
-Any transform from [audiomentations](https://github.com/iver56/audiomentations) is supported. If your preset ends with `Resample(16000)`, PESQ is computed at the 8 kHz intermediate stage for accurate stratification — see [CLAUDE.md](CLAUDE.md) for details.
-
-To reference a noise-dir from a custom preset (e.g. for `AddBackgroundNoise`), use the literal placeholder `${NOISE_DIR}` — it is substituted with `--noise-dir` at load time.
-
-## Benchmark table
-
-Typical results on LibriSpeech:
-
-| Preset               | PESQ (mean) |
-| -------------------- | ----------- |
-| `clean_reference`    | 4.4 (WB)    |
-| `telecommunication`  | 2.8 (NB)    |
-| `bad_audio_encoding` | 2.0 (WB)    |
-| `noisy_environment`  | 1.5 (WB)    |
+Any transform from [audiomentations](https://github.com/iver56/audiomentations) is supported. Use `${NOISE_DIR}` as a placeholder for `--noise-dir` inside your preset YAML.
 
 ## Requirements
 
 - Python ≥ 3.10
 - [uv](https://docs.astral.sh/uv/) for `uvx` usage
-
-## Roadmap
-
-- **v2**: NISQA scoring (`nisqa_mos`, `nisqa_noisiness`, `nisqa_discontinuity`)
-- **v2**: CommonVoice dataset support
+- No system dependencies — MP3 encoding uses pure-Python `lameenc`, no ffmpeg needed
