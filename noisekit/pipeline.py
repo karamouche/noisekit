@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import librosa
@@ -52,11 +53,17 @@ def run_generate(
     console.print(f"Loaded {len(raw_samples)} samples.")
 
     manifest: list[dict] = []
-    counter = 0
+    _seen_names: set[str] = set()
 
     for i, sample in enumerate(track(raw_samples, description="Generating …")):
         ref_array, ref_sr, transcript = extract_audio_and_text(sample)
         ref_16k = _resample_to_16k(ref_array, ref_sr)
+
+        raw_path = sample.get("audio", {}).get("path") or ""
+        raw_stem = Path(raw_path).stem if raw_path else f"sample_{i:04d}"
+        original_stem = re.sub(r"[^a-z0-9_]", "_", raw_stem.lower())
+        original_stem = re.sub(r"_+", "_", original_stem).strip("_") or f"sample_{i:04d}"
+        source_filename = Path(raw_path).name if raw_path else None
 
         for preset_name in presets:
             preset = load_preset(preset_name, preset_file, noise_dir=noise_dir)
@@ -65,7 +72,15 @@ def run_generate(
 
             min_len = min(len(ref_16k), len(deg))
 
-            filename = f"sample_{counter:04d}_{preset_name}.wav"
+            base = f"{original_stem}_{preset_name}"
+            filename = f"{base}.wav"
+            if filename in _seen_names:
+                n = 1
+                while f"{base}_{n}.wav" in _seen_names:
+                    n += 1
+                filename = f"{base}_{n}.wav"
+            _seen_names.add(filename)
+
             sf.write(audio_dir / filename, deg, 16000, subtype="PCM_16")
 
             # For presets with a restoration Resample at the end, compute PESQ
@@ -86,20 +101,21 @@ def run_generate(
 
             entry: dict = {
                 "audio": filename,
-                "transcript": transcript,
+                "source": source_filename,
+                "dataset": dataset,
                 "preset": preset_name,
+                "transcript": transcript,
                 "snr_db": round(snr, 3),
                 "pesq_mos": pesq_score,
             }
             manifest.append(entry)
-            counter += 1
 
     manifest_path = output_dir / "manifest.jsonl"
     with open(manifest_path, "w", encoding="utf-8") as f:
         for entry in manifest:
             f.write(json.dumps(entry) + "\n")
 
-    console.print(f"\n[green]Done.[/green] {counter} files written to [bold]{output_dir}[/bold]")
+    console.print(f"\n[green]Done.[/green] {len(manifest)} files written to [bold]{output_dir}[/bold]")
     console.print(f"Manifest: [bold]{manifest_path}[/bold]")
 
 

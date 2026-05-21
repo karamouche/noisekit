@@ -95,13 +95,17 @@ Uses `datasets` with `Audio(decode=False)` + manual `soundfile` decoding — avo
 
 ```json
 {
-  "audio": "sample_0000_telecommunication.wav",
-  "transcript": "...",
+  "audio": "common_voice_en_23136613_telecommunication.wav",
+  "source": "common_voice_en_23136613.mp3",
+  "dataset": "google/fleurs",
   "preset": "telecommunication",
+  "transcript": "...",
   "snr_db": 1.8,
   "pesq_mos": 2.86
 }
 ```
+
+File naming: `{original_stem}_{preset_name}.wav` where `original_stem` is derived from `sample["audio"]["path"]` (sanitized to `[a-z0-9_]`). Falls back to `sample_{i:04d}` if no path is available. Collisions resolved with `_1`, `_2`, … suffixes.
 
 NISQA fields (`nisqa_mos`, `nisqa_noisiness`, `nisqa_discontinuity`) are deferred to v2.
 
