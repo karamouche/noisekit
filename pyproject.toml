@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "noisekit"
+version = "0.1.0"
+description = "Generate noise-stratified speech datasets for ASR benchmark studies"
+requires-python = ">=3.10"
+dependencies = [
+    "audiomentations>=0.38",
+    "pesq>=0.0.4",
+    "datasets>=2.20",
+    "typer>=0.12",
+    "rich>=13.7",
+    "soundfile>=0.12",
+    "numpy>=1.26",
+    "scipy>=1.13",
+    "pyyaml>=6.0",
+    "librosa>=0.10",
+    "lameenc>=1.4",
+]
+
+[project.scripts]
+noisekit = "noisekit.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["noisekit"]

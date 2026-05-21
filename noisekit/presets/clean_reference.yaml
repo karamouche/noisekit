@@ -1,0 +1,8 @@
+name: clean_reference
+description: "Minimal processing — slight gain normalization only. PESQ NB target: 4.0–4.5"
+transforms:
+  - type: Gain
+    parameters:
+      min_gain_db: -1.0
+      max_gain_db: 1.0
+    p: 1.0

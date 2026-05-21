@@ -1,0 +1,25 @@
+name: bad_audio_encoding
+description: "Aggressive low-bitrate codec artifacts: heavy MP3 compression + wideband filtering. PESQ WB target: 1.5–2.5"
+transforms:
+  - type: HighPassFilter
+    parameters:
+      min_cutoff_freq: 80.0
+      max_cutoff_freq: 80.0
+    p: 1.0
+  - type: LowPassFilter
+    parameters:
+      min_cutoff_freq: 7500.0
+      max_cutoff_freq: 7500.0
+    p: 1.0
+  - type: Mp3Compression
+    parameters:
+      min_bitrate: 16
+      max_bitrate: 32
+      backend: lameenc
+      preserve_delay: true
+    p: 1.0
+  - type: Gain
+    parameters:
+      min_gain_db: -3.0
+      max_gain_db: 3.0
+    p: 0.5

@@ -1,0 +1,19 @@
+# Claude Code
+.agents/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+
+
+# noisekit output
+output*/
+*.jsonl
+scores.json
+
+# macOS
+.DS_Store
