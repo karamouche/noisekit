@@ -1,0 +1,5 @@
+name: reverb_noisy
+description: "Far-field reverberant recording with ambient noise. Requires --noise-dir and pyroomacoustics. PESQ WB target: 1.0-2.5"
+chain:
+  - reverb_far_field
+  - noisy_environment

@@ -1,6 +1,9 @@
 name: noisy_environment
 description: "Real-world ambient noise (cafe/street/office) mixed in at variable SNR. Requires --noise-dir. PESQ WB target: 1.0–2.5"
 transforms:
+  - type: Normalize
+    parameters: {}
+    p: 1.0
   - type: AddBackgroundNoise
     parameters:
       sounds_path: ${NOISE_DIR}

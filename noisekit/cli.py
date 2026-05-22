@@ -10,7 +10,7 @@ from rich.table import Table
 
 app = typer.Typer(
     name="noisekit",
-    help="Generate noise-stratified speech datasets for ASR benchmark studies.",
+    help="Generate noisy speech datasets for ASR benchmark studies.",
     add_completion=False,
 )
 console = Console()
@@ -44,6 +44,12 @@ def generate(
     ] = True,
 ) -> None:
     """Generate a degraded speech dataset by applying audio presets to a clean source dataset."""
+    console.print(
+        "[bold yellow]⚠  Synthetic pipeline[/bold yellow] — outputs approximate real-world degradation "
+        "but are not a substitute for true annotated production audio. "
+        "Validate final benchmarks on real degraded recordings.",
+        style="yellow",
+    )
     from .pipeline import run_generate
 
     resolved_output = output if output is not None else Path("./output") / datetime.now().strftime("%Y-%m-%d_%H%M%S")
@@ -100,7 +106,10 @@ def list_presets(
         table.add_column("Transforms")
 
     for p in presets:
-        transforms_str = " → ".join(f"{t['type']}(p={t.get('p', 1.0)})" for t in p.get("transforms", []))
+        if "chain" in p:
+            transforms_str = "chain: " + " → ".join(p["chain"])
+        else:
+            transforms_str = " → ".join(f"{t['type']}(p={t.get('p', 1.0)})" for t in p.get("transforms", []))
         if verbose:
             table.add_row(p["name"], p["description"], transforms_str)
         else:

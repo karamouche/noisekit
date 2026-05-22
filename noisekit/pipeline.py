@@ -58,6 +58,9 @@ def run_generate(
         ref_array, ref_sr, transcript = extract_audio_and_text(sample)
         language = extract_language(sample, config)
         ref_16k = _resample_to_16k(ref_array, ref_sr)
+        peak = np.abs(ref_16k).max()
+        if peak > 1e-9:
+            ref_16k = ref_16k / peak
 
         raw_path = sample.get("audio", {}).get("path") or ""
         raw_stem = Path(raw_path).stem if raw_path else f"sample_{i:04d}"

@@ -1,0 +1,18 @@
+name: reverb_far_field
+description: "Far-field recording in a reverberant room (lecture hall / open office). Requires pyroomacoustics. PESQ WB target: 2.0-3.5"
+transforms:
+  - type: RoomSimulator
+    parameters:
+      min_size_x: 5.0
+      max_size_x: 10.0
+      min_size_y: 5.0
+      max_size_y: 10.0
+      min_size_z: 2.5
+      max_size_z: 4.0
+      min_absorption_value: 0.05
+      max_absorption_value: 0.20
+      min_mic_distance: 1.0
+      max_mic_distance: 3.0
+      use_ray_tracing: false
+      leave_length_unchanged: true
+    p: 1.0
