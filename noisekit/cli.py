@@ -44,6 +44,12 @@ def generate(
     ] = True,
 ) -> None:
     """Generate a degraded speech dataset by applying audio presets to a clean source dataset."""
+    console.print(
+        "[bold yellow]⚠  Synthetic pipeline[/bold yellow] — outputs approximate real-world degradation "
+        "but are not a substitute for true annotated production audio. "
+        "Validate final benchmarks on real degraded recordings.",
+        style="yellow",
+    )
     from .pipeline import run_generate
 
     resolved_output = output if output is not None else Path("./output") / datetime.now().strftime("%Y-%m-%d_%H%M%S")

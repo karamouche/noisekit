@@ -1,4 +1,4 @@
-name: telecommunication
+name: telecom
 description: "G.711-style call: 8 kHz codec + 300–3400 Hz bandpass + low-bitrate MP3 artifacts. PESQ NB target: 2.0–3.5"
 transforms:
   - type: Resample

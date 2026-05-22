@@ -2,4 +2,4 @@ name: noisy_telecom
 description: "Telephony call in a noisy environment: ambient noise + G.711 codec. Requires --noise-dir. PESQ NB target: 1.5-2.5"
 chain:
   - noisy_environment
-  - telecommunication
+  - telecom

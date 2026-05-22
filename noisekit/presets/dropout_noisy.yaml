@@ -1,5 +1,0 @@
-name: dropout_noisy
-description: "Noisy VoIP call with packet loss: ambient noise + transmission dropouts. Requires --noise-dir. PESQ WB target: 1.0-2.0"
-chain:
-  - noisy_environment
-  - transmission_dropout

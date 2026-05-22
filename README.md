@@ -14,14 +14,18 @@ Generate noisy speech datasets for ASR benchmark studies.
 
 Takes a clean speech-to-text dataset from HuggingFace, applies real-world degradation presets via [audiomentations](https://github.com/iver56/audiomentations), and scores each output with PESQ + SNR + NISQA — producing a JSONL manifest ready for noise-robustness benchmarking.
 
-Seven atomic scenarios are covered out of the box: **telecommunication** (G.711 + low-bitrate MP3), **bad audio encoding** (aggressive low-bitrate compression), **noisy environment** (real ambient noise), **clipping distortion** (microphone overload), **transmission dropout** (VoIP packet loss), and **far-field reverb** (room acoustics). Atomic presets can be chained into compound multi-condition scenarios.
+Seven atomic scenarios are covered out of the box: **telecom** (G.711 + low-bitrate MP3), **bad audio encoding** (aggressive low-bitrate compression), **noisy environment** (real ambient noise), **clipping distortion** (microphone overload), **transmission dropout** (VoIP packet loss), and **far-field reverb** (room acoustics). Atomic presets can be chained into compound multi-condition scenarios.
+
+> [!WARNING]
+> **Synthetic pipeline — not a substitute for real-world data.**
+> noisekit applies programmatic transforms (codec simulation, additive noise, room acoustics) to clean recordings. The resulting degradations are controllable and reproducible, but they will never fully replicate the complexity of genuine production audio captured in degraded conditions. Scores and model rankings obtained on this synthetic data may not transfer directly to real-world deployments. Use noisekit for rapid iteration and ablation studies; validate final results on true annotated production audio.
 
 ## How it works
 
 ```mermaid
 flowchart LR
     A[("HuggingFace\nDataset")] --> B["noisekit generate"]
-    B --> C["telecommunication\nG.711 + MP3"]
+    B --> C["telecom\nG.711 + MP3"]
     B --> D["bad_audio_encoding\n16-32 kbps MP3"]
     B --> E["noisy_environment\nReal ambient noise"]
     B --> F["clipping_distortion\nMic overload"]
@@ -29,7 +33,8 @@ flowchart LR
     B --> H["reverb_far_field\nRoom acoustics"]
     B --> I["clean_reference\nControl"]
     B --> J["noisy_telecom\nnoisy → telecom"]
-    C & D & E & F & G & H & I & J --> K[("WAVs +\nmetadata.jsonl\nPESQ · SNR · NISQA")]
+    B --> K["clipping_telecom\nclipping → telecom"]
+    C & D & E & F & G & H & I & J & K --> L[("WAVs +\nmetadata.jsonl\nPESQ · SNR · NISQA")]
 ```
 
 ## Install
@@ -59,7 +64,7 @@ uvx noisekit generate \
   --config en_us \
   --split test \
   --samples 300 \
-  --presets telecommunication bad_audio_encoding \
+  --presets telecom bad_audio_encoding \
   --output ./benchmark_dataset \
   --seed 42
 ```
@@ -80,7 +85,7 @@ Output:
 benchmark_dataset/
 ├── metadata.jsonl          # one entry per generated file (AudioFolder format)
 └── audio/
-    ├── sample_0000_telecommunication.wav
+    ├── sample_0000_telecom.wav
     ├── sample_0001_bad_audio_encoding.wav
     └── ...
 ```
@@ -96,11 +101,11 @@ Each `metadata.jsonl` entry:
 
 ```json
 {
-  "file_name": "audio/sample_0042_telecommunication.wav",
+  "file_name": "audio/sample_0042_telecom.wav",
   "source": "common_voice_en_23136613.mp3",
   "dataset": "google/fleurs",
   "language": "en-US",
-  "preset": "telecommunication",
+  "preset": "telecom",
   "transcript": "the cat sat on the mat",
   "snr_db": 5.2,
   "pesq_mos": 2.78,
@@ -141,22 +146,16 @@ Ten built-in presets — seven atomic scenarios plus three compound multi-condit
 | Preset                 | Description                                                               | PESQ       |
 | ---------------------- | ------------------------------------------------------------------------- | ---------- |
 | `clean_reference`      | Minimal processing (PESQ ceiling / control)                               | 4.0-4.5    |
-| `telecommunication`    | G.711-style call: 8 kHz bandpass + 8-bit BitCrush + 16-32 kbps MP3 codec  | NB 2.0-3.5 |
+| `telecom`              | G.711-style call: 8 kHz bandpass + 8-bit BitCrush + 16-32 kbps MP3 codec  | NB 2.0-3.5 |
 | `bad_audio_encoding`   | Wideband audio crushed by 16-32 kbps MP3 compression                      | WB 1.5-2.5 |
 | `noisy_environment`    | Real ambient noise from `--noise-dir` mixed in at SNR 5-15 dB             | WB 1.0-2.5 |
 | `clipping_distortion`  | Microphone overload: clips the loudest 10-25% of samples                  | WB 2.0-3.5 |
 | `transmission_dropout` | VoIP packet loss: 1-3 silent dropout windows (60-180 ms each)             | WB 1.5-3.0 |
-| `reverb_far_field`     | Far-field room reverb at 1-3 m mic distance (requires `pyroomacoustics`)  | WB 2.0-3.5 |
+| `reverb_far_field`     | Far-field room reverb at 1-3 m mic distance                               | WB 2.0-3.5 |
 
-`telecommunication` is scored with PESQ narrowband at 8 kHz (before the final upsample); all other presets are scored wideband at 16 kHz.
+`telecom` is scored with PESQ narrowband at 8 kHz (before the final upsample); all other presets are scored wideband at 16 kHz.
 
-`noisy_environment`, `clipping_distortion`, `transmission_dropout`, and `reverb_far_field` require no noise corpus. The first three need only `audiomentations`; `reverb_far_field` additionally requires `pyroomacoustics`:
-
-```bash
-uv add pyroomacoustics
-# or as an optional dep:
-uvx noisekit[reverb] ...
-```
+All atomic presets require no noise corpus. All dependencies including `pyroomacoustics` (used by `reverb_far_field`) are bundled — no extra install needed.
 
 `noisy_environment` requires `--noise-dir` pointing at a directory of background-noise WAVs (e.g. MUSAN, DEMAND, FSD50K). If omitted, noisekit auto-downloads a small MUSAN noise-only subset (~120 MB) from HuggingFace on first use.
 
@@ -164,11 +163,11 @@ uvx noisekit[reverb] ...
 
 Compound presets chain two atomic presets together. Noise is applied first (acoustic environment), then codec or dropout (digital processing on the already-degraded signal).
 
-| Preset          | Chain                                        | Requires                        | PESQ       |
-| --------------- | -------------------------------------------- | ------------------------------- | ---------- |
-| `noisy_telecom` | `noisy_environment` → `telecommunication`    | `--noise-dir`                   | NB 1.5-2.5 |
-| `dropout_noisy` | `noisy_environment` → `transmission_dropout` | `--noise-dir`                   | WB 1.0-2.0 |
-| `reverb_noisy`  | `reverb_far_field` → `noisy_environment`     | `--noise-dir` + pyroomacoustics | WB 1.0-2.5 |
+| Preset             | Chain                                    | Requires                        | PESQ       |
+| ------------------ | ---------------------------------------- | ------------------------------- | ---------- |
+| `noisy_telecom`    | `noisy_environment` → `telecom`          | `--noise-dir`                   | NB 1.5-2.5 |
+| `clipping_telecom` | `clipping_distortion` → `telecom`        | —                               | NB 1.0-2.5 |
+| `reverb_noisy`     | `reverb_far_field` → `noisy_environment` | `--noise-dir`                   | WB 1.0-2.5 |
 
 You can also define your own compound preset with a `chain:` key in a YAML file:
 
@@ -177,7 +176,7 @@ name: my_compound
 description: "Noisy environment then telephony codec"
 chain:
   - noisy_environment
-  - telecommunication
+  - telecom
 ```
 
 ### Custom presets
