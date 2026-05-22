@@ -25,7 +25,7 @@ flowchart LR
     B --> D["bad_audio_encoding\n16-32 kbps MP3"]
     B --> E["noisy_environment\nReal ambient noise"]
     B --> F["clean_reference\nControl"]
-    C & D & E & F --> G[("WAVs +\nmanifest.jsonl\nPESQ · SNR · NISQA")]
+    C & D & E & F --> G[("WAVs +\nmetadata.jsonl\nPESQ · SNR · NISQA")]
 ```
 
 ## Install
@@ -74,20 +74,30 @@ Output:
 
 ```
 benchmark_dataset/
-├── manifest.jsonl          # one entry per generated file
+├── metadata.jsonl          # one entry per generated file (AudioFolder format)
 └── audio/
     ├── sample_0000_telecommunication.wav
     ├── sample_0001_bad_audio_encoding.wav
     └── ...
 ```
 
-Each manifest entry:
+The output is directly loadable as a HuggingFace dataset:
+
+```python
+from datasets import load_dataset
+ds = load_dataset("audiofolder", data_dir="./benchmark_dataset")
+```
+
+Each `metadata.jsonl` entry:
 
 ```json
 {
-  "audio": "sample_0042_telecommunication.wav",
-  "transcript": "the cat sat on the mat",
+  "file_name": "audio/sample_0042_telecommunication.wav",
+  "source": "common_voice_en_23136613.mp3",
+  "dataset": "google/fleurs",
+  "language": "en-US",
   "preset": "telecommunication",
+  "transcript": "the cat sat on the mat",
   "snr_db": 5.2,
   "pesq_mos": 2.78,
   "nisqa_mos": 2.14,

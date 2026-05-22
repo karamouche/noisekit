@@ -26,6 +26,34 @@ def load_samples(
     return list(itertools.islice(ds, n))
 
 
+def _config_to_bcp47(config: str) -> str:
+    """Convert a HuggingFace config name to a BCP-47 tag.
+
+    ``en_us`` → ``en-US``, ``fr_fr`` → ``fr-FR``, ``en`` → ``en``.
+    """
+    parts = config.split("_", 1)
+    if len(parts) == 2:
+        return f"{parts[0].lower()}-{parts[1].upper()}"
+    return config.lower()
+
+
+def extract_language(sample: dict, config: str | None = None) -> str | None:
+    """Return a BCP-47 language tag for the sample.
+
+    Priority:
+    1. ``locale`` — already BCP-47 (Common Voice, Mozilla datasets).
+    2. ``config`` — HuggingFace subset name normalized to BCP-47
+       (e.g. ``en_us`` → ``en-US``). The per-sample ``language`` column is
+       intentionally skipped because datasets like FLEURS store full names
+       (``"English"``) which are not valid BCP-47 tags.
+    """
+    if locale := sample.get("locale"):
+        return locale
+    if config:
+        return _config_to_bcp47(config)
+    return None
+
+
 def extract_audio_and_text(sample: dict) -> tuple[np.ndarray, int, str]:
     audio_field = sample["audio"]
 

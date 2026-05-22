@@ -10,7 +10,7 @@ import soundfile as sf
 from rich.console import Console
 from rich.progress import track
 
-from .dataset import extract_audio_and_text, load_samples
+from .dataset import extract_audio_and_text, extract_language, load_samples
 from .noise_cache import ensure_default_noise_dir
 from .scoring import _NISQA_KEYS, audio_stats, compute_nisqa, compute_pesq, compute_snr_db
 from .transforms import list_builtin_presets, load_preset, preset_requires_noise_dir
@@ -56,6 +56,7 @@ def run_generate(
 
     for i, sample in enumerate(track(raw_samples, description="Generating …")):
         ref_array, ref_sr, transcript = extract_audio_and_text(sample)
+        language = extract_language(sample, config)
         ref_16k = _resample_to_16k(ref_array, ref_sr)
 
         raw_path = sample.get("audio", {}).get("path") or ""
@@ -98,9 +99,10 @@ def run_generate(
 
             nisqa_scores = compute_nisqa(deg, 16000) if nisqa else dict.fromkeys(_NISQA_KEYS)
             entry: dict = {
-                "audio": filename,
+                "file_name": f"audio/{filename}",
                 "source": source_filename,
                 "dataset": dataset,
+                "language": language,
                 "preset": preset_name,
                 "transcript": transcript,
                 "snr_db": round(snr, 3),
@@ -109,13 +111,14 @@ def run_generate(
             }
             manifest.append(entry)
 
-    manifest_path = output_dir / "manifest.jsonl"
-    with open(manifest_path, "w", encoding="utf-8") as f:
+    metadata_path = output_dir / "metadata.jsonl"
+    with open(metadata_path, "w", encoding="utf-8") as f:
         for entry in manifest:
             f.write(json.dumps(entry) + "\n")
 
     console.print(f"\n[green]Done.[/green] {len(manifest)} files written to [bold]{output_dir}[/bold]")
-    console.print(f"Manifest: [bold]{manifest_path}[/bold]")
+    console.print(f"Metadata: [bold]{metadata_path}[/bold]")
+    console.print('[dim]Load with: datasets.load_dataset("audiofolder", data_dir="{output_dir}")[/dim]')
 
 
 def run_score(
