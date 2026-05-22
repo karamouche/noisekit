@@ -6,7 +6,7 @@
 
 ## Project
 
-`noisekit` is a `uvx`-compatible Python CLI that generates degraded speech datasets from clean HuggingFace corpora. It simulates seven atomic audio degradation scenarios — telecom (G.711 calls), low-bitrate codec compression, noisy environments (real ambient noise), far-field reverb, transmission dropout, and clipping distortion — plus compound multi-condition scenarios built by chaining atomic presets. Designed for ASR noise-robustness benchmarking. A `clean_reference` control completes the catalog.
+`noisekit` is a `uvx`-compatible Python CLI that generates degraded speech datasets from clean HuggingFace corpora. It simulates six atomic audio degradation scenarios — telecom (G.711 calls), low-bitrate codec compression, noisy environments (real ambient noise), far-field reverb, and clipping distortion — plus compound multi-condition scenarios built by chaining atomic presets. Designed for ASR noise-robustness benchmarking. A `clean_reference` control completes the catalog.
 
 ## Package Management
 
@@ -72,7 +72,6 @@ Built-in presets:
 | `low_bitrate`    | Wideband low-bitrate MP3 compression (16-32 kbps)     | 80-7500 Hz @ 16 kHz | WB 16 kHz | 1.5-2.5    |
 | `noisy_environment`    | Real ambient noise via `AddBackgroundNoise`           | up to 8-12 kHz      | WB 16 kHz | 2.0-3.5    |
 | `clipping_distortion`  | Microphone overload / ADC saturation (`ClippingDistortion` 10-25%) | full | WB 16 kHz | 2.0-3.5    |
-| `transmission_dropout` | VoIP packet loss: 1-3 silent dropout windows          | full                | WB 16 kHz | 1.5-3.0    |
 | `reverb_far_field`     | Far-field reverberant room via `RoomSimulator`                              | full | WB 16 kHz | 2.0-3.5 |
 
 `telecom` and any compound preset ending with `telecom` use the 8 kHz PESQ NB scoring split (see below). All other presets score in PESQ WB at 16 kHz.
@@ -184,7 +183,7 @@ cat test_out/metadata.jsonl
 # New atomic presets — no external dependencies
 uv run noisekit generate \
   --dataset google/fleurs --config en_us --split test \
-  --samples 3 --presets clipping_distortion transmission_dropout \
+  --samples 3 --presets clipping_distortion \
   --no-nisqa --output ./test_atomic --seed 42
 
 # noisy_environment — auto-downloads MUSAN noise-only clips on first run
@@ -219,7 +218,7 @@ uv run noisekit generate \
   --output ./test_noise --seed 42
 ```
 
-Expected PESQ spread: clean ~4.6, telecom ~2.5-3.5 (NB), low_bitrate ~1.5-2.5 (WB), noisy_environment ~1.0-2.5 (WB), clipping_distortion ~2.0-3.5 (WB), transmission_dropout ~1.5-3.0 (WB), reverb_far_field ~2.0-3.5 (WB).
+Expected PESQ spread: clean ~4.6, telecom ~2.5-3.5 (NB), low_bitrate ~1.5-2.5 (WB), noisy_environment ~1.0-2.5 (WB), clipping_distortion ~2.0-3.5 (WB), reverb_far_field ~2.0-3.5 (WB).
 
 Compound preset PESQ: noisy_telecom ~1.5-2.5 (NB), clipping_telecom ~1.0-2.5 (NB), reverb_noisy ~1.0-2.5 (WB).
 

@@ -17,14 +17,13 @@ def test_list_builtin_presets() -> None:
     from noisekit.transforms import list_builtin_presets
 
     presets = list_builtin_presets()
-    assert len(presets) == 10
+    assert len(presets) == 9
     names = {p["name"] for p in presets}
     assert "clean_reference" in names
     assert "telecom" in names
     assert "low_bitrate" in names
     assert "noisy_environment" in names
     assert "clipping_distortion" in names
-    assert "transmission_dropout" in names
     assert "reverb_far_field" in names
     assert "noisy_telecom" in names
     assert "reverb_noisy" in names

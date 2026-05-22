@@ -14,7 +14,7 @@ Generate degraded speech datasets for noise-robust ASR benchmarking.
 
 Takes a clean HuggingFace speech dataset, applies real-world degradation presets via [audiomentations](https://github.com/iver56/audiomentations), and scores each output with PESQ, SNR, and NISQA, producing a JSONL manifest ready for noise-robustness benchmarking.
 
-Seven atomic degradation scenarios are built in: telephony (G.711 + low-bitrate codec), wideband codec compression, ambient noise, clipping distortion, transmission dropout, and far-field reverb. Atomic presets compose into compound multi-condition scenarios.
+Six atomic degradation scenarios are built in: telephony (G.711 + low-bitrate codec), wideband codec compression, ambient noise, clipping distortion, and far-field reverb. Atomic presets compose into compound multi-condition scenarios.
 
 > [!NOTE]
 > Degradations are programmatically simulated. Scores may not generalize to genuine production recordings; validate final benchmarks on annotated real-world data.
@@ -131,7 +131,7 @@ uvx noisekit list-presets --verbose   # show full transform stack
 
 ## Presets
 
-Ten built-in presets: seven atomic scenarios, three compound multi-condition presets, and a clean reference control. None use synthetic white noise; codec artifacts, real ambient recordings, and room simulation produce the degradation instead.
+Nine built-in presets: six atomic scenarios, three compound multi-condition presets, and a clean reference control. None use synthetic white noise; codec artifacts, real ambient recordings, and room simulation produce the degradation instead.
 
 ### Atomic presets
 
@@ -142,7 +142,6 @@ Ten built-in presets: seven atomic scenarios, three compound multi-condition pre
 | `low_bitrate`    | Wideband audio crushed by 16-32 kbps MP3 compression                     | WB 1.5-2.5 |
 | `noisy_environment`    | Real ambient noise from `--noise-dir` mixed in at SNR 5-15 dB            | WB 1.0-2.5 |
 | `clipping_distortion`  | Microphone overload: clips the loudest 10-25% of samples                 | WB 2.0-3.5 |
-| `transmission_dropout` | VoIP packet loss: 1-3 silent dropout windows (60-180 ms each)            | WB 1.5-3.0 |
 | `reverb_far_field`     | Far-field room reverb at 1-3 m mic distance                              | WB 2.0-3.5 |
 
 `telecom` is scored with PESQ narrowband at 8 kHz (before the final upsample); all other presets are scored wideband at 16 kHz.
