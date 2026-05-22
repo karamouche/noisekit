@@ -1,4 +1,4 @@
-"""Auto-download and cache MUSAN noise-only clips for noisy_environment.
+"""Auto-download and cache MUSAN noise-only clips for noise.
 
 Only the `noise` class (wind, rain, traffic, machinery…) is downloaded.
 Speech and music are both excluded: speech pollutes ASR/PESQ scoring;

@@ -1,5 +1,5 @@
-name: noisy_telecom
+name: noise_telecom
 description: "G.711 telephone channel with ambient background noise: background noise then narrowband codec. Requires --noise-dir."
 chain:
-  - noisy_environment
+  - noise
   - telecom

@@ -1,4 +1,4 @@
-name: clipping_distortion
+name: clipping
 description: "Amplitude clipping simulating microphone overload or ADC saturation (10–25% of peak samples)."
 transforms:
   - type: ClippingDistortion

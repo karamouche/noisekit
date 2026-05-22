@@ -1,4 +1,4 @@
-name: reverb_far_field
+name: reverb
 description: "Far-field recording in a reverberant room via acoustic room simulation (1–3 m mic distance)."
 transforms:
   - type: RoomSimulator

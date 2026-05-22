@@ -61,12 +61,12 @@ uvx noisekit generate \
   --seed 42
 ```
 
-For `noisy_environment`, supply a directory of real noise WAVs (e.g. [MUSAN](https://www.openslr.org/17/), [DEMAND](https://zenodo.org/record/1227121), or [FSD50K](https://zenodo.org/record/4060432)):
+For `noise`, supply a directory of real noise WAVs (e.g. [MUSAN](https://www.openslr.org/17/), [DEMAND](https://zenodo.org/record/1227121), or [FSD50K](https://zenodo.org/record/4060432)):
 
 ```bash
 uvx noisekit generate \
   --dataset google/fleurs --config en_us --split test \
-  --samples 300 --presets noisy_environment \
+  --samples 300 --presets noise \
   --noise-dir ~/datasets/musan/noise \
   --output ./benchmark_dataset --seed 42
 ```
@@ -140,15 +140,15 @@ Nine built-in presets: six atomic scenarios, three compound multi-condition pres
 | `clean_reference`      | Minimal processing (PESQ ceiling / control)                              | 4.0-4.5    |
 | `telecom`              | G.711-style call: 8 kHz bandpass + 8-bit BitCrush + 16-32 kbps MP3 codec | NB 2.0-3.5 |
 | `low_bitrate`    | Wideband audio crushed by 16-32 kbps MP3 compression                     | WB 1.5-2.5 |
-| `noisy_environment`    | Real ambient noise from `--noise-dir` mixed in at SNR 5-15 dB            | WB 1.0-2.5 |
-| `clipping_distortion`  | Microphone overload: clips the loudest 10-25% of samples                 | WB 2.0-3.5 |
-| `reverb_far_field`     | Far-field room reverb at 1-3 m mic distance                              | WB 2.0-3.5 |
+| `noise`                | Real ambient noise from `--noise-dir` mixed in at SNR 5-15 dB            | WB 1.0-2.5 |
+| `clipping`             | Microphone overload: clips the loudest 10-25% of samples                 | WB 2.0-3.5 |
+| `reverb`               | Far-field room reverb at 1-3 m mic distance                              | WB 2.0-3.5 |
 
 `telecom` is scored with PESQ narrowband at 8 kHz (before the final upsample); all other presets are scored wideband at 16 kHz.
 
-All atomic presets require no noise corpus. All dependencies, including `pyroomacoustics` (used by `reverb_far_field`), are bundled with no extra install needed.
+All atomic presets require no noise corpus. All dependencies, including `pyroomacoustics` (used by `reverb`), are bundled with no extra install needed.
 
-`noisy_environment` requires `--noise-dir` pointing at a directory of background-noise WAVs (e.g. MUSAN, DEMAND, FSD50K). If omitted, noisekit auto-downloads a small MUSAN noise-only subset (~120 MB) from HuggingFace on first use.
+`noise` requires `--noise-dir` pointing at a directory of background-noise WAVs (e.g. MUSAN, DEMAND, FSD50K). If omitted, noisekit auto-downloads a small MUSAN noise-only subset (~120 MB) from HuggingFace on first use.
 
 ### Compound presets
 
@@ -156,9 +156,9 @@ Compound presets chain two atomic presets together. Noise is applied first (acou
 
 | Preset             | Chain                                    | Requires      | PESQ       |
 | ------------------ | ---------------------------------------- | ------------- | ---------- |
-| `noisy_telecom`    | `noisy_environment` → `telecom`          | `--noise-dir` | NB 1.5-2.5 |
-| `clipping_telecom` | `clipping_distortion` → `telecom`        | (none)        | NB 1.0-2.5 |
-| `reverb_noisy`     | `reverb_far_field` → `noisy_environment` | `--noise-dir` | WB 1.0-2.5 |
+| `noise_telecom`    | `noise` → `telecom`          | `--noise-dir` | NB 1.5-2.5 |
+| `clipping_telecom` | `clipping` → `telecom`       | (none)        | NB 1.0-2.5 |
+| `noise_reverb`     | `noise` → `reverb`           | `--noise-dir` | WB 1.0-2.5 |
 
 You can also define your own compound preset with a `chain:` key in a YAML file:
 
@@ -166,7 +166,7 @@ You can also define your own compound preset with a `chain:` key in a YAML file:
 name: my_compound
 description: "Noisy environment then telephony codec"
 chain:
-  - noisy_environment
+  - noise
   - telecom
 ```
 
