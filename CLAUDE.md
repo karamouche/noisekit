@@ -93,13 +93,14 @@ Uses `datasets` with `Audio(decode=False)` + manual `soundfile` decoding — avo
 
 ## Output Format
 
-`manifest.jsonl` — one JSON object per generated file:
+`metadata.jsonl` — one JSON object per generated file, following the HuggingFace [AudioFolder](https://huggingface.co/docs/datasets/audio_dataset#audiofolder) convention so the output directory is directly loadable with `datasets.load_dataset("audiofolder", data_dir="./out")`.
 
 ```json
 {
-  "audio": "common_voice_en_23136613_telecommunication.wav",
+  "file_name": "audio/common_voice_en_23136613_telecommunication.wav",
   "source": "common_voice_en_23136613.mp3",
   "dataset": "google/fleurs",
+  "language": "en-US",
   "preset": "telecommunication",
   "transcript": "...",
   "snr_db": 1.8,
@@ -127,7 +128,7 @@ uv run noisekit generate \
   --config en_us --split test \
   --samples 3 --presets clean_reference telecommunication bad_audio_encoding \
   --output ./test_out --seed 42
-cat test_out/manifest.jsonl
+cat test_out/metadata.jsonl
 
 # noisy_environment — auto-downloads MUSAN noise-only clips on first run
 uv run noisekit generate \
