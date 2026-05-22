@@ -1,0 +1,5 @@
+name: noise_reverb
+description: "Far-field reverberant room with superimposed ambient background noise. Uses --noise-dir or auto-downloads MUSAN noise on first use."
+chain:
+  - noise
+  - reverb

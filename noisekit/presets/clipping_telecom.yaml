@@ -1,5 +1,5 @@
 name: clipping_telecom
 description: "Amplitude clipping over a telephone channel: ADC saturation then G.711-style narrowband codec."
 chain:
-  - clipping_distortion
+  - clipping
   - telecom

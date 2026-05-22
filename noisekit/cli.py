@@ -34,8 +34,9 @@ def generate(
             "--noise-dir",
             help=(
                 "Directory of background-noise WAVs (e.g. MUSAN, DEMAND, FSD50K). "
-                "Used by noisy_environment. If omitted, a small MUSAN music+noise "
-                "subset is auto-downloaded to ~/.cache/noisekit/ on first use."
+                "Used by the noise preset and compound noise presets. "
+                "If omitted, a small MUSAN noise-only subset (~20 files, ~120 MB) "
+                "is auto-downloaded to ~/.cache/noisekit/noise/musan_ambient/ on first use."
             ),
         ),
     ] = None,

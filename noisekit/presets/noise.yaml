@@ -1,5 +1,5 @@
-name: noisy_environment
-description: "Real-world ambient background noise mixed at variable SNR (5–15 dB). Requires --noise-dir."
+name: noise
+description: "Real-world ambient background noise mixed at variable SNR (5-15 dB). Uses --noise-dir or auto-downloads MUSAN noise on first use."
 transforms:
   - type: Normalize
     parameters: {}

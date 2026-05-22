@@ -1,5 +1,0 @@
-name: reverb_noisy
-description: "Far-field reverberant room with superimposed ambient background noise. Requires --noise-dir."
-chain:
-  - reverb_far_field
-  - noisy_environment

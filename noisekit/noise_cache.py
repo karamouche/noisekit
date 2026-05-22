@@ -1,4 +1,4 @@
-"""Auto-download and cache MUSAN noise-only clips for noisy_environment.
+"""Auto-download and cache MUSAN noise-only clips for noise.
 
 Only the `noise` class (wind, rain, traffic, machinery…) is downloaded.
 Speech and music are both excluded: speech pollutes ASR/PESQ scoring;
@@ -28,7 +28,7 @@ def get_default_noise_cache_dir() -> Path:
 
 
 def ensure_default_noise_dir(num_samples: int = DEFAULT_NOISE_NUM_SAMPLES) -> Path:
-    """Return a directory of MUSAN music+noise WAVs, downloading on first use."""
+    """Return a directory of MUSAN noise-only WAVs, downloading on first use."""
     cache_dir = get_default_noise_cache_dir()
     cache_dir.mkdir(parents=True, exist_ok=True)
 
