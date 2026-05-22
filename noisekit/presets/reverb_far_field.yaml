@@ -1,5 +1,5 @@
 name: reverb_far_field
-description: "Far-field recording in a reverberant room (lecture hall / open office). Requires pyroomacoustics. PESQ WB target: 2.0-3.5"
+description: "Far-field recording in a reverberant room via acoustic room simulation (1–3 m mic distance)."
 transforms:
   - type: RoomSimulator
     parameters:

@@ -1,5 +1,5 @@
-name: bad_audio_encoding
-description: "Aggressive low-bitrate codec artifacts: heavy MP3 compression + wideband filtering. PESQ WB target: 1.5–2.5"
+name: low_bitrate
+description: "Wideband low-bitrate MP3 compression (16–32 kbps) with bandpass filtering (80–7500 Hz)."
 transforms:
   - type: HighPassFilter
     parameters:

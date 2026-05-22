@@ -21,7 +21,7 @@ def test_list_builtin_presets() -> None:
     names = {p["name"] for p in presets}
     assert "clean_reference" in names
     assert "telecom" in names
-    assert "bad_audio_encoding" in names
+    assert "low_bitrate" in names
     assert "noisy_environment" in names
     assert "clipping_distortion" in names
     assert "transmission_dropout" in names

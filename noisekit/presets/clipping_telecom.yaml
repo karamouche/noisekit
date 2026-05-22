@@ -1,5 +1,5 @@
 name: clipping_telecom
-description: "Clipped microphone signal over a phone line: ADC saturation + G.711 codec. PESQ NB target: 1.0-2.5"
+description: "Amplitude clipping over a telephone channel: ADC saturation then G.711-style narrowband codec."
 chain:
   - clipping_distortion
   - telecom

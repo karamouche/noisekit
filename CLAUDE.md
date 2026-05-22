@@ -6,13 +6,13 @@
 
 ## Project
 
-`noisekit` is a `uvx`-compatible Python CLI that generates degraded speech datasets from clean HuggingFace corpora. It simulates seven atomic audio degradation scenarios — telecom (G.711 calls), bad audio encoding (low-bitrate codecs), noisy environments (real ambient noise), far-field reverb, transmission dropout, and clipping distortion — plus compound multi-condition scenarios built by chaining atomic presets. Designed for ASR noise-robustness benchmarking. A `clean_reference` control completes the catalog.
+`noisekit` is a `uvx`-compatible Python CLI that generates degraded speech datasets from clean HuggingFace corpora. It simulates seven atomic audio degradation scenarios — telecom (G.711 calls), low-bitrate codec compression, noisy environments (real ambient noise), far-field reverb, transmission dropout, and clipping distortion — plus compound multi-condition scenarios built by chaining atomic presets. Designed for ASR noise-robustness benchmarking. A `clean_reference` control completes the catalog.
 
 ## Package Management
 
 Use **UV** for everything: `uv add`, `uv run`, `uv sync`. Never use pip directly.
 
-Key runtime dependencies: `audiomentations>=0.38`, `lameenc>=1.4` (pure-Python MP3 encoder used by `Mp3Compression` in `telecom` and `bad_audio_encoding`; no system ffmpeg needed), `torchmetrics>=1.7.0` (NISQA scoring — downloads ~50 MB model weights to `~/.torchmetrics/NISQA/` on first use), `pyroomacoustics` (room acoustics simulation for `reverb_far_field` — now a core dependency, no extra install needed).
+Key runtime dependencies: `audiomentations>=0.38`, `lameenc>=1.4` (pure-Python MP3 encoder used by `Mp3Compression` in `telecom` and `low_bitrate`; no system ffmpeg needed), `torchmetrics>=1.7.0` (NISQA scoring — downloads ~50 MB model weights to `~/.torchmetrics/NISQA/` on first use), `pyroomacoustics` (room acoustics simulation for `reverb_far_field` — now a core dependency, no extra install needed).
 
 ## Architecture
 
@@ -69,7 +69,7 @@ Built-in presets:
 | ---------------------- | ----------------------------------------------------- | ------------------- | --------- | ---------- |
 | `clean_reference`      | Minimal gain normalization (PESQ ceiling)             | full                | WB 16 kHz | 4.0-4.5    |
 | `telecom`              | G.711 call + low-bitrate MP3 codec artifacts          | 300-3400 Hz @ 8 kHz | NB 8 kHz  | 2.0-3.5    |
-| `bad_audio_encoding`   | Aggressive low-bitrate MP3 (16-32 kbps)               | 80-7500 Hz @ 16 kHz | WB 16 kHz | 1.5-2.5    |
+| `low_bitrate`    | Wideband low-bitrate MP3 compression (16-32 kbps)     | 80-7500 Hz @ 16 kHz | WB 16 kHz | 1.5-2.5    |
 | `noisy_environment`    | Real ambient noise via `AddBackgroundNoise`           | up to 8-12 kHz      | WB 16 kHz | 2.0-3.5    |
 | `clipping_distortion`  | Microphone overload / ADC saturation (`ClippingDistortion` 10-25%) | full | WB 16 kHz | 2.0-3.5    |
 | `transmission_dropout` | VoIP packet loss: 1-3 silent dropout windows          | full                | WB 16 kHz | 1.5-3.0    |
@@ -109,7 +109,7 @@ Rules:
 
 The catalog deliberately avoids `AddGaussianSNR` — white Gaussian noise sounds artificial and doesn't reflect real production audio. Instead:
 
-- `telecom` and `bad_audio_encoding` rely on `Mp3Compression` at 16-32 kbps for realistic codec smearing/pre-echo.
+- `telecom` and `low_bitrate` rely on `Mp3Compression` at 16-32 kbps for realistic codec smearing/pre-echo.
 - `noisy_environment` uses `AddBackgroundNoise` over a user-supplied WAV corpus (MUSAN/DEMAND/FSD50K), so the noise floor matches the real environment you care about.
 
 ## PESQ Scoring — Important Design Decision
@@ -177,7 +177,7 @@ uv run noisekit list-presets --verbose
 uv run noisekit generate \
   --dataset google/fleurs \
   --config en_us --split test \
-  --samples 3 --presets clean_reference telecom bad_audio_encoding \
+  --samples 3 --presets clean_reference telecom low_bitrate \
   --output ./test_out --seed 42
 cat test_out/metadata.jsonl
 
@@ -219,7 +219,7 @@ uv run noisekit generate \
   --output ./test_noise --seed 42
 ```
 
-Expected PESQ spread: clean ~4.6, telecom ~2.5-3.5 (NB), bad_audio_encoding ~1.5-2.5 (WB), noisy_environment ~1.0-2.5 (WB), clipping_distortion ~2.0-3.5 (WB), transmission_dropout ~1.5-3.0 (WB), reverb_far_field ~2.0-3.5 (WB).
+Expected PESQ spread: clean ~4.6, telecom ~2.5-3.5 (NB), low_bitrate ~1.5-2.5 (WB), noisy_environment ~1.0-2.5 (WB), clipping_distortion ~2.0-3.5 (WB), transmission_dropout ~1.5-3.0 (WB), reverb_far_field ~2.0-3.5 (WB).
 
 Compound preset PESQ: noisy_telecom ~1.5-2.5 (NB), clipping_telecom ~1.0-2.5 (NB), reverb_noisy ~1.0-2.5 (WB).
 

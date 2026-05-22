@@ -56,7 +56,7 @@ uvx noisekit generate \
   --config en_us \
   --split test \
   --samples 300 \
-  --presets telecom bad_audio_encoding \
+  --presets telecom low_bitrate \
   --output ./benchmark_dataset \
   --seed 42
 ```
@@ -78,7 +78,7 @@ benchmark_dataset/
 ├── metadata.jsonl          # one entry per generated file (AudioFolder format)
 └── audio/
     ├── sample_0000_telecom.wav
-    ├── sample_0001_bad_audio_encoding.wav
+    ├── sample_0001_low_bitrate.wav
     └── ...
 ```
 
@@ -139,7 +139,7 @@ Ten built-in presets: seven atomic scenarios, three compound multi-condition pre
 | ---------------------- | ------------------------------------------------------------------------ | ---------- |
 | `clean_reference`      | Minimal processing (PESQ ceiling / control)                              | 4.0-4.5    |
 | `telecom`              | G.711-style call: 8 kHz bandpass + 8-bit BitCrush + 16-32 kbps MP3 codec | NB 2.0-3.5 |
-| `bad_audio_encoding`   | Wideband audio crushed by 16-32 kbps MP3 compression                     | WB 1.5-2.5 |
+| `low_bitrate`    | Wideband audio crushed by 16-32 kbps MP3 compression                     | WB 1.5-2.5 |
 | `noisy_environment`    | Real ambient noise from `--noise-dir` mixed in at SNR 5-15 dB            | WB 1.0-2.5 |
 | `clipping_distortion`  | Microphone overload: clips the loudest 10-25% of samples                 | WB 2.0-3.5 |
 | `transmission_dropout` | VoIP packet loss: 1-3 silent dropout windows (60-180 ms each)            | WB 1.5-3.0 |
