@@ -5,7 +5,8 @@ build-backend = "hatchling.build"
 [project]
 name = "noisekit"
 version = "0.1.0"
-description = "Generate noisy speech datasets for ASR benchmark studies"
+description = "Generate degraded speech datasets for noise-robust ASR benchmarking"
+readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 dependencies = [
@@ -22,7 +23,6 @@ dependencies = [
     "pyyaml>=6.0",
     "librosa>=0.10",
     "lameenc>=1.4",
-    "torchcodec>=0.13.0",
     "torch>=2.12.0",
     "torchmetrics>=1.7.0",
 ]
