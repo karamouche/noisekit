@@ -1,5 +1,5 @@
 name: noise_telecom
-description: "G.711 telephone channel with ambient background noise: background noise then narrowband codec. Requires --noise-dir."
+description: "G.711 telephone channel with ambient background noise: background noise then narrowband codec. Uses --noise-dir or auto-downloads MUSAN noise on first use."
 chain:
   - noise
   - telecom

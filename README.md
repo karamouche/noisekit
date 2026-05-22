@@ -61,7 +61,7 @@ uvx noisekit generate \
   --seed 42
 ```
 
-For `noise`, supply a directory of real noise WAVs (e.g. [MUSAN](https://www.openslr.org/17/), [DEMAND](https://zenodo.org/record/1227121), or [FSD50K](https://zenodo.org/record/4060432)):
+For `noise`, you can supply your own background-noise WAVs with `--noise-dir` (e.g. [MUSAN](https://www.openslr.org/17/), [DEMAND](https://zenodo.org/record/1227121), or [FSD50K](https://zenodo.org/record/4060432)):
 
 ```bash
 uvx noisekit generate \
@@ -146,19 +146,19 @@ Nine built-in presets: six atomic scenarios, three compound multi-condition pres
 
 `telecom` is scored with PESQ narrowband at 8 kHz (before the final upsample); all other presets are scored wideband at 16 kHz.
 
-All atomic presets require no noise corpus. All dependencies, including `pyroomacoustics` (used by `reverb`), are bundled with no extra install needed.
+All dependencies, including `pyroomacoustics` (used by `reverb`), are bundled with no extra install needed.
 
-`noise` requires `--noise-dir` pointing at a directory of background-noise WAVs (e.g. MUSAN, DEMAND, FSD50K). If omitted, noisekit auto-downloads a small MUSAN noise-only subset (~120 MB) from HuggingFace on first use.
+`noise` accepts a `--noise-dir` pointing at a directory of background-noise WAVs (e.g. MUSAN, DEMAND, FSD50K). If omitted, noisekit auto-downloads a small MUSAN noise-only subset (~20 files, ~120 MB) to `~/.cache/noisekit/noise/musan_ambient/` on first use.
 
 ### Compound presets
 
 Compound presets chain two atomic presets together. Noise is applied first (acoustic environment), then codec or dropout (digital processing on the already-degraded signal).
 
-| Preset             | Chain                                    | Requires      | PESQ       |
-| ------------------ | ---------------------------------------- | ------------- | ---------- |
-| `noise_telecom`    | `noise` → `telecom`          | `--noise-dir` | NB 1.5-2.5 |
-| `clipping_telecom` | `clipping` → `telecom`       | (none)        | NB 1.0-2.5 |
-| `noise_reverb`     | `noise` → `reverb`           | `--noise-dir` | WB 1.0-2.5 |
+| Preset             | Chain                                    | Noise source                   | PESQ       |
+| ------------------ | ---------------------------------------- | ------------------------------ | ---------- |
+| `noise_telecom`    | `noise` → `telecom`          | `--noise-dir` or auto-download | NB 1.5-2.5 |
+| `clipping_telecom` | `clipping` → `telecom`       | (none)                         | NB 1.0-2.5 |
+| `noise_reverb`     | `noise` → `reverb`           | `--noise-dir` or auto-download | WB 1.0-2.5 |
 
 You can also define your own compound preset with a `chain:` key in a YAML file:
 
