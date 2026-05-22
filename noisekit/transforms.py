@@ -6,6 +6,7 @@ from typing import NamedTuple
 import audiomentations
 import numpy as np
 import yaml
+from audiomentations.core.transforms_interface import BaseWaveformTransform
 
 
 class _SRTrackingCompose:
@@ -19,7 +20,7 @@ class _SRTrackingCompose:
     the effective rate from the length ratio before calling the next transform.
     """
 
-    def __init__(self, transforms: list[audiomentations.BaseWaveformTransform]) -> None:
+    def __init__(self, transforms: list[BaseWaveformTransform]) -> None:
         self._transforms = transforms
 
     def __call__(self, samples: np.ndarray, sample_rate: int) -> np.ndarray:
@@ -67,10 +68,42 @@ def preset_requires_noise_dir(name: str, preset_file: Path | None = None) -> boo
         for v in t.get("parameters", {}).values():
             if v == _NOISE_DIR_PLACEHOLDER:
                 return True
-    return False
+    return any(preset_requires_noise_dir(chained_name, preset_file) for chained_name in cfg.get("chain", []))
 
 
-def _make_transform(t: dict, noise_dir: Path | None = None) -> audiomentations.BaseWaveformTransform:
+def _collect_t_configs(cfg: dict, preset_file: Path | None, noise_dir: Path | None) -> list[dict]:
+    """Resolve a preset config to a flat list of transform dicts.
+
+    Atomic presets return cfg['transforms'] directly. Compound presets
+    (chain: [name, ...]) load each named preset's transforms and concatenate
+    them. Nesting chains inside chains is not supported.
+    """
+    if "chain" in cfg and "transforms" in cfg:
+        raise ValueError(
+            f"Preset '{cfg.get('name', '?')}' defines both 'chain' and 'transforms'. Use one or the other."
+        )
+    if "transforms" in cfg:
+        return list(cfg["transforms"])
+    if "chain" not in cfg:
+        raise ValueError(f"Preset '{cfg.get('name', '?')}' has neither 'transforms' nor 'chain' key.")
+    presets_dir = Path(__file__).parent / "presets"
+    combined: list[dict] = []
+    for chained_name in cfg["chain"]:
+        if preset_file is not None:
+            candidate = preset_file.parent / f"{chained_name}.yaml"
+            chained_path = candidate if candidate.exists() else presets_dir / f"{chained_name}.yaml"
+        else:
+            chained_path = presets_dir / f"{chained_name}.yaml"
+        if not chained_path.exists():
+            raise FileNotFoundError(f"Chained preset '{chained_name}' not found at {chained_path}.")
+        chained_cfg = yaml.safe_load(chained_path.read_text())
+        if "chain" in chained_cfg:
+            raise ValueError(f"Chained preset '{chained_name}' is itself a compound preset. Nesting not supported.")
+        combined.extend(chained_cfg.get("transforms", []))
+    return combined
+
+
+def _make_transform(t: dict, noise_dir: Path | None = None) -> BaseWaveformTransform:
     cls_name = t["type"]
     if not hasattr(audiomentations, cls_name):
         raise ValueError(
@@ -94,7 +127,7 @@ def load_preset(
         raise FileNotFoundError(f"Preset '{name}' not found. Run 'noisekit list-presets' to see available presets.")
 
     cfg = yaml.safe_load(path.read_text())
-    t_configs = cfg["transforms"]
+    t_configs = _collect_t_configs(cfg, preset_file, noise_dir)
 
     full = _SRTrackingCompose([_make_transform(t, noise_dir) for t in t_configs])
 

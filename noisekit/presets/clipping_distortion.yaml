@@ -1,0 +1,13 @@
+name: clipping_distortion
+description: "Microphone overload / ADC saturation: clips 10-25% of peak samples. PESQ WB target: 2.0-3.5"
+transforms:
+  - type: ClippingDistortion
+    parameters:
+      min_percentile_threshold: 10
+      max_percentile_threshold: 25
+    p: 1.0
+  - type: Gain
+    parameters:
+      min_gain_db: -3.0
+      max_gain_db: 3.0
+    p: 0.5

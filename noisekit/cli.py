@@ -10,7 +10,7 @@ from rich.table import Table
 
 app = typer.Typer(
     name="noisekit",
-    help="Generate noise-stratified speech datasets for ASR benchmark studies.",
+    help="Generate noisy speech datasets for ASR benchmark studies.",
     add_completion=False,
 )
 console = Console()
@@ -100,7 +100,10 @@ def list_presets(
         table.add_column("Transforms")
 
     for p in presets:
-        transforms_str = " → ".join(f"{t['type']}(p={t.get('p', 1.0)})" for t in p.get("transforms", []))
+        if "chain" in p:
+            transforms_str = "chain: " + " → ".join(p["chain"])
+        else:
+            transforms_str = " → ".join(f"{t['type']}(p={t.get('p', 1.0)})" for t in p.get("transforms", []))
         if verbose:
             table.add_row(p["name"], p["description"], transforms_str)
         else:

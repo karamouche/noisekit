@@ -4,13 +4,13 @@
 
 ## Project
 
-`noisekit` is a `uvx`-compatible Python CLI that generates degraded speech datasets from clean HuggingFace corpora. It simulates three real-world audio degradation scenarios — telecommunication (G.711 calls), bad audio encoding (low-bitrate codecs), and noisy environments (real ambient noise) — for ASR noise-robustness benchmarking. A `clean_reference` control completes the catalog.
+`noisekit` is a `uvx`-compatible Python CLI that generates degraded speech datasets from clean HuggingFace corpora. It simulates seven atomic audio degradation scenarios — telecommunication (G.711 calls), bad audio encoding (low-bitrate codecs), noisy environments (real ambient noise), far-field reverb, transmission dropout, and clipping distortion — plus compound multi-condition scenarios built by chaining atomic presets. Designed for ASR noise-robustness benchmarking. A `clean_reference` control completes the catalog.
 
 ## Package Management
 
 Use **UV** for everything: `uv add`, `uv run`, `uv sync`. Never use pip directly.
 
-Key runtime dependencies: `audiomentations>=0.38`, `lameenc>=1.4` (pure-Python MP3 encoder used by `Mp3Compression` in `telecommunication` and `bad_audio_encoding`; no system ffmpeg needed), `torchmetrics>=1.7.0` (NISQA scoring — downloads ~50 MB model weights to `~/.torchmetrics/NISQA/` on first use).
+Key runtime dependencies: `audiomentations>=0.38`, `lameenc>=1.4` (pure-Python MP3 encoder used by `Mp3Compression` in `telecommunication` and `bad_audio_encoding`; no system ffmpeg needed), `torchmetrics>=1.7.0` (NISQA scoring — downloads ~50 MB model weights to `~/.torchmetrics/NISQA/` on first use), `pyroomacoustics` (room acoustics simulation for `reverb_far_field` — now a core dependency, no extra install needed).
 
 ## Architecture
 
@@ -61,14 +61,47 @@ transforms:
 
 Built-in presets:
 
-| Preset               | Scenario                                     | Bandwidth           | PESQ mode | Target MOS |
-| -------------------- | -------------------------------------------- | ------------------- | --------- | ---------- |
-| `clean_reference`    | Minimal gain normalization (PESQ ceiling)    | full                | WB 16 kHz | 4.0-4.5    |
-| `telecommunication`  | G.711 call + low-bitrate MP3 codec artifacts | 300-3400 Hz @ 8 kHz | NB 8 kHz  | 2.0-3.5    |
-| `bad_audio_encoding` | Aggressive low-bitrate MP3 (16-32 kbps)      | 80-7500 Hz @ 16 kHz | WB 16 kHz | 1.5-2.5    |
-| `noisy_environment`  | Real ambient noise via `AddBackgroundNoise`  | up to 8-12 kHz      | WB 16 kHz | 2.0-3.5    |
+### Atomic Presets
 
-`telecommunication` uses the 8 kHz PESQ NB scoring split (see below). All other presets score in PESQ WB at 16 kHz.
+| Preset                 | Scenario                                              | Bandwidth           | PESQ mode | Target MOS |
+| ---------------------- | ----------------------------------------------------- | ------------------- | --------- | ---------- |
+| `clean_reference`      | Minimal gain normalization (PESQ ceiling)             | full                | WB 16 kHz | 4.0-4.5    |
+| `telecommunication`    | G.711 call + low-bitrate MP3 codec artifacts          | 300-3400 Hz @ 8 kHz | NB 8 kHz  | 2.0-3.5    |
+| `bad_audio_encoding`   | Aggressive low-bitrate MP3 (16-32 kbps)               | 80-7500 Hz @ 16 kHz | WB 16 kHz | 1.5-2.5    |
+| `noisy_environment`    | Real ambient noise via `AddBackgroundNoise`           | up to 8-12 kHz      | WB 16 kHz | 2.0-3.5    |
+| `clipping_distortion`  | Microphone overload / ADC saturation (`ClippingDistortion` 10-25%) | full | WB 16 kHz | 2.0-3.5    |
+| `transmission_dropout` | VoIP packet loss: 1-3 silent dropout windows          | full                | WB 16 kHz | 1.5-3.0    |
+| `reverb_far_field`     | Far-field reverberant room via `RoomSimulator`                              | full | WB 16 kHz | 2.0-3.5 |
+
+`telecommunication` and any compound preset ending with `telecommunication` use the 8 kHz PESQ NB scoring split (see below). All other presets score in PESQ WB at 16 kHz.
+
+### Compound Presets
+
+Compound presets chain two or more atomic presets together. Noise is added first (acoustic environment), then codec/dropout (digital processing of the already-degraded signal).
+
+| Preset          | Chain                                          | Requires                       | PESQ mode | Target MOS |
+| --------------- | ---------------------------------------------- | ------------------------------ | --------- | ---------- |
+| `noisy_telecom` | `noisy_environment` → `telecommunication`      | `--noise-dir`                  | NB 8 kHz  | 1.5-2.5    |
+| `reverb_noisy`  | `reverb_far_field` → `noisy_environment`       | `--noise-dir`                   | WB 16 kHz | 1.0-2.5    |
+| `dropout_noisy` | `noisy_environment` → `transmission_dropout`   | `--noise-dir`                  | WB 16 kHz | 1.0-2.0    |
+
+### Compound Preset YAML Format
+
+A preset can use `chain:` instead of `transforms:` to apply multiple atomic presets sequentially:
+
+```yaml
+name: my_compound
+description: "..."
+chain:
+  - atomic_preset_a
+  - atomic_preset_b
+```
+
+Rules:
+- `chain` and `transforms` are mutually exclusive.
+- Chained entries must be names of built-in atomic presets (no nesting chains).
+- `${NOISE_DIR}` resolution and the PESQ NB scoring split are detected automatically across the full concatenated chain.
+- `reverb_far_field` uses `pyroomacoustics` (bundled as a core dependency — no extra install needed).
 
 ### Why no white noise
 
@@ -130,11 +163,29 @@ uv run noisekit generate \
   --output ./test_out --seed 42
 cat test_out/metadata.jsonl
 
+# New atomic presets — no external dependencies
+uv run noisekit generate \
+  --dataset google/fleurs --config en_us --split test \
+  --samples 3 --presets clipping_distortion transmission_dropout \
+  --no-nisqa --output ./test_atomic --seed 42
+
 # noisy_environment — auto-downloads MUSAN noise-only clips on first run
 uv run noisekit generate \
   --dataset google/fleurs --config en_us --split test \
   --samples 3 --presets noisy_environment \
   --output ./test_noise --seed 42
+
+# Compound presets (auto-downloads MUSAN noise on first run)
+uv run noisekit generate \
+  --dataset google/fleurs --config en_us --split test \
+  --samples 3 --presets noisy_telecom dropout_noisy \
+  --no-nisqa --output ./test_compound --seed 42
+
+# Far-field reverb
+uv run noisekit generate \
+  --dataset google/fleurs --config en_us --split test \
+  --samples 3 --presets reverb_far_field reverb_noisy \
+  --no-nisqa --output ./test_reverb --seed 42
 
 # noisy_environment with your own noise corpus (skips auto-download)
 uv run noisekit generate \
@@ -144,6 +195,8 @@ uv run noisekit generate \
   --output ./test_noise --seed 42
 ```
 
-Expected PESQ spread: clean ~4.6, telecommunication ~2.5-3.5 (NB), bad_audio_encoding ~1.5-2.5 (WB), noisy_environment ~1.0-2.5 (WB).
+Expected PESQ spread: clean ~4.6, telecommunication ~2.5-3.5 (NB), bad_audio_encoding ~1.5-2.5 (WB), noisy_environment ~1.0-2.5 (WB), clipping_distortion ~2.0-3.5 (WB), transmission_dropout ~1.5-3.0 (WB), reverb_far_field ~2.0-3.5 (WB).
+
+Compound preset PESQ: noisy_telecom ~1.5-2.5 (NB), dropout_noisy ~1.0-2.0 (WB), reverb_noisy ~1.0-2.5 (WB).
 
 Expected NISQA spread: clean ~4.0-4.5, degraded presets ~1.5-3.0. NISQA model weights (~50 MB) are downloaded on first run.

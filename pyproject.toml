@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "noisekit"
 version = "0.1.0"
-description = "Generate noise-stratified speech datasets for ASR benchmark studies"
+description = "Generate noisy speech datasets for ASR benchmark studies"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 dependencies = [
@@ -18,6 +18,7 @@ dependencies = [
     "soundfile>=0.12",
     "numpy>=1.26",
     "scipy>=1.13",
+    "pyroomacoustics>=0.7",
     "pyyaml>=6.0",
     "librosa>=0.10",
     "lameenc>=1.4",
