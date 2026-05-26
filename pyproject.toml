@@ -7,25 +7,52 @@ name = "noisekit"
 version = "0.1.0"
 description = "Generate degraded speech datasets for noise-robust ASR benchmarking"
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
 requires-python = ">=3.10"
-dependencies = [
-    "audiomentations>=0.38",
-    "pesq>=0.0.4",
-    "datasets>=2.20",
-    "huggingface_hub>=0.24",
-    "typer>=0.12",
-    "rich>=13.7",
-    "soundfile>=0.12",
-    "numpy>=1.26",
-    "scipy>=1.13",
-    "pyroomacoustics>=0.7",
-    "pyyaml>=6.0",
-    "librosa>=0.10",
-    "lameenc>=1.4",
-    "torch>=2.12.0",
-    "torchmetrics>=1.7.0",
+authors = [{ name = "Hugo Imbert" }]
+keywords = [
+  "speech",
+  "audio",
+  "asr",
+  "dataset",
+  "noise",
+  "degradation",
+  "benchmark",
 ]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+dependencies = [
+  "audiomentations>=0.38",
+  "pesq>=0.0.4",
+  "datasets>=2.20",
+  "huggingface_hub>=0.24",
+  "typer>=0.12",
+  "rich>=13.7",
+  "soundfile>=0.12",
+  "numpy>=1.26",
+  "scipy>=1.13",
+  "pyroomacoustics>=0.7",
+  "pyyaml>=6.0",
+  "librosa>=0.10",
+  "lameenc>=1.4",
+  "torch>=2.12.0",
+  "torchmetrics>=1.7.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/karamouche/noisekit"
+Repository = "https://github.com/karamouche/noisekit"
+"Bug Tracker" = "https://github.com/karamouche/noisekit/issues"
 
 [project.scripts]
 noisekit = "noisekit.cli:app"
@@ -34,9 +61,7 @@ noisekit = "noisekit.cli:app"
 packages = ["noisekit"]
 
 [dependency-groups]
-dev = [
-    "pytest>=8.0",
-]
+dev = ["pytest>=8.0"]
 
 [tool.ruff]
 target-version = "py310"
